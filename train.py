@@ -6,7 +6,9 @@ from collections import deque
 import torch
 from torch.distributions import Categorical
 
-from drl_curiosity.models import ActorCritic, IntrinsicCuriosityModule
+from drl_curiosity.encoders import ConvEncoder
+from drl_curiosity.icm import DiscreteICM
+from drl_curiosity.policies import DiscreteActorCritic
 from drl_curiosity.preprocessing import preprocess_frame, stack_frames
 
 
@@ -65,8 +67,9 @@ def main() -> None:
         raise SystemExit("This starter implementation expects a discrete action space.")
 
     action_dim = env.action_space.n
-    policy = ActorCritic(action_dim=action_dim).to(device)
-    icm = IntrinsicCuriosityModule(
+    policy = DiscreteActorCritic(action_dim=action_dim).to(device)
+    icm = DiscreteICM(
+        feature_encoder=ConvEncoder().to(device),
         action_dim=action_dim,
         eta=args.intrinsic_reward_scale,
     ).to(device)
