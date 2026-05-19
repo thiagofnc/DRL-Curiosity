@@ -9,6 +9,7 @@ from drl_curiosity.icm import ContinuousICM, DiscreteICM
 from drl_curiosity.logging_utils import Logger, make_run_dir
 from drl_curiosity.policies import ContinuousActorCritic, DiscreteActorCritic
 from drl_curiosity.running_stats import RunningMeanStd
+from drl_curiosity.trainer_ppo import PPOConfig, PPOTrainer, RolloutBuffer
 
 __all__ = [
     "ConvEncoder",
@@ -20,4 +21,7 @@ __all__ = [
     "RunningMeanStd",
     "Logger",
     "make_run_dir",
+    "PPOConfig",
+    "PPOTrainer",
+    "RolloutBuffer",
 ]

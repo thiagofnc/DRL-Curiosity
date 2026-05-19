@@ -92,11 +92,71 @@ def _check_running_mean_std() -> None:
           f" | mean~{rms.mean.mean().item():.3f} std~{rms.std.mean().item():.3f}")
 
 
+def _check_ppo_trainer() -> None:
+    """End-to-end exercise of PPOTrainer on Pendulum-v1.
+
+    Pendulum is bundled with gymnasium core (no MuJoCo install required), is
+    continuous-action (1-D), and runs instantly. The config below is
+    deliberately tiny -- this verifies wiring, GAE math, and the PPO+ICM
+    update path; it is not a learning test.
+    """
+    try:
+        import gymnasium as gym  # noqa: F401
+    except ImportError:
+        print("[ppo-trainer] SKIP (gymnasium not installed)")
+        return
+
+    from drl_curiosity.trainer_ppo import PPOConfig, PPOTrainer
+
+    def make_env():
+        import gymnasium as gym
+
+        env = gym.make("Pendulum-v1")
+        return gym.wrappers.RecordEpisodeStatistics(env)
+
+    envs = gym.vector.SyncVectorEnv([make_env, make_env])
+    obs_dim = int(envs.single_observation_space.shape[0])
+    action_dim = int(envs.single_action_space.shape[0])
+
+    policy = ContinuousActorCritic(obs_dim=obs_dim, action_dim=action_dim)
+    icm = ContinuousICM(
+        feature_encoder=MLPEncoder(obs_dim=obs_dim),
+        action_dim=action_dim,
+    )
+
+    config = PPOConfig(
+        total_steps=64,
+        num_envs=2,
+        rollout_steps=16,
+        update_epochs=2,
+        num_minibatches=4,
+        anneal_lr=False,
+        log_interval=10_000,  # suppress per-update print
+    )
+
+    trainer = PPOTrainer(envs=envs, policy=policy, icm=icm, config=config, logger=None)
+    initial_log_std = policy.log_std.detach().clone()
+    final_step = trainer.train(seed=0)
+    envs.close()
+
+    assert final_step == config.total_steps, (final_step, config.total_steps)
+    assert torch.isfinite(policy.log_std).all(), policy.log_std
+    # PPO should have moved the log_std at least slightly after 2 updates
+    assert not torch.allclose(policy.log_std.detach(), initial_log_std), (
+        "log_std did not move -- gradient flow into the policy may be broken"
+    )
+    print(
+        "[ppo-trainer] OK"
+        f" | steps={final_step} log_std={policy.log_std.detach().mean().item():+.4f}"
+    )
+
+
 def main() -> None:
     torch.manual_seed(0)
     _check_discrete_pixel_path()
     _check_continuous_state_path()
     _check_running_mean_std()
+    _check_ppo_trainer()
     print("smoke test passed")
 
 
