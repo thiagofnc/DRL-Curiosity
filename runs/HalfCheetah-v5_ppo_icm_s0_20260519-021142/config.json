@@ -1,0 +1,22 @@
+{
+  "anneal_lr": true,
+  "clip_coef": 0.2,
+  "clip_value_loss": true,
+  "ent_coef": 0.0,
+  "gae_lambda": 0.95,
+  "gamma": 0.99,
+  "icm_coef": 1.0,
+  "intrinsic_reward_scale": 0.01,
+  "log_interval": 1,
+  "lr": 0.0003,
+  "max_grad_norm": 0.5,
+  "normalize_intrinsic": true,
+  "normalize_obs": true,
+  "num_envs": 4,
+  "num_minibatches": 32,
+  "obs_clip": 10.0,
+  "rollout_steps": 512,
+  "total_steps": 1000000,
+  "update_epochs": 10,
+  "vf_coef": 0.5
+}
