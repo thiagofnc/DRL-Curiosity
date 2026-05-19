@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -447,6 +448,32 @@ class PPOTrainer:
 
         return {k: v / max(1, n_updates) for k, v in sums.items()}
 
+    def save_checkpoint(self, path: str | Path, global_step: int = 0) -> None:
+        """Persist policy + ICM weights and obs-RMS stats so play_halfcheetah
+        can reconstruct the agent exactly. The obs-RMS stats are critical:
+        without them, the loaded policy sees un-normalized observations and
+        behaves randomly."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        obs_rms_dict = None
+        if self.obs_rms is not None:
+            obs_rms_dict = {
+                "mean": self.obs_rms.mean,
+                "var": self.obs_rms.var,
+                "count": self.obs_rms.count,
+            }
+        torch.save(
+            {
+                "policy_state_dict": self.policy.state_dict(),
+                "icm_state_dict": self.icm.state_dict(),
+                "obs_rms": obs_rms_dict,
+                "obs_dim": self.obs_dim,
+                "action_dim": self.action_dim,
+                "global_step": global_step,
+            },
+            path,
+        )
+
     def train(self, seed: int = 0) -> int:
         raw_obs_np, _ = self.envs.reset(seed=seed)
         global_step = 0
@@ -497,5 +524,10 @@ class PPOTrainer:
                     f"kl={update_info['approx_kl']:.4f} "
                     f"ep_ret={ep_ret:.2f}"
                 )
+
+        if self.logger is not None:
+            ckpt_path = self.logger.run_dir / "checkpoint.pt"
+            self.save_checkpoint(ckpt_path, global_step=global_step)
+            print(f"checkpoint saved to {ckpt_path}")
 
         return global_step
