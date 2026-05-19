@@ -28,7 +28,7 @@ from drl_curiosity.trainer_ppo import PPOConfig, PPOTrainer
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Train PPO + ICM on a continuous-control env.")
-    p.add_argument("--env-id", default="HalfCheetah-v4")
+    p.add_argument("--env-id", default="HalfCheetah-v5")
     p.add_argument("--total-steps", type=int, default=1_000_000)
     p.add_argument("--num-envs", type=int, default=4)
     p.add_argument("--rollout-steps", type=int, default=512)
